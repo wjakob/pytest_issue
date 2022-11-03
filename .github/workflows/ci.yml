@@ -1,0 +1,44 @@
+name: Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # This is the "main" test suite, which tests a large number of different
+  # versions of default compilers and Python versions in GitHub Actions.
+  standard:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['windows-2022', 'ubuntu-latest']
+        python: ['3.9', '3.10', '3.11']
+
+    name: "Python ${{ matrix.python }} / ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Setup Python ${{ matrix.python }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python }}
+
+    - name: Install PyTest
+      run: |
+        python -m pip install pytest pytest-github-actions-annotate-failures
+        python -m pip install .
+
+    - name: Run tests
+      run: >
+        python -m pytest
